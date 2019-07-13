@@ -18,7 +18,7 @@ CMD [ \
     sleep 10; \
     \
     echo dm: looking for recent modified files; \
-    while (find -mmin -1 | egrep '.*' > /dev/null); \
+    while (find -mmin -15 | egrep '.*' > /dev/null); \
       do sleep 10; \
     done; \
     \
