@@ -71,63 +71,79 @@ class DockMirror:
         parser.add_argument('-H', '--host')
         args, unknown = parser.parse_known_args(self.docker_args)
 
+        # TODO: ugly
+        self.insert_index = self.docker_args.index(unknown[1])
+
         if args.host:
             os.environ["DOCKER_HOST"] = args.host
 
-    def sync(self):
+    def start_container(self):
+        return self.docker.containers.run(
+            image='beteras/dockmirror',
+
+            volumes={
+                self.volume_name: {
+                    'bind': '/home/dockmirror'
+                },
+            },
+
+            labels={
+                'mid': get_machine_id(),
+                'path': get_sha256(self.path),
+            },
+
+            auto_remove=True,
+            detach=True,
+        )
+
+    def get_container(self):
         dockmirrors = self.docker.containers.list(filters={
-            'ancestor': 'dockmirror',
+            'ancestor': 'beteras/dockmirror',
             'status': 'running',
             'label': [
                 'mid=' + get_machine_id(),
                 'path=' + get_sha256(self.path),
-            ],
+                ],
         })
 
         assert len(dockmirrors) <= 1, "can't have more than 1 container with same labels"
 
-        dockmirror = dockmirrors[0] if len(dockmirrors) == 1 else None
+        return dockmirrors[0] if len(dockmirrors) == 1 else self.start_container()
 
-        if not dockmirror:
-            dockmirror = self.docker.containers.run(
-                image='dockmirror',
+    def sync(self):
+        dockmirror = self.get_container()
 
-                volumes={
-                    self.volume_name: {
-                        'bind': '/home/dockmirror'
-                    },
-                },
-
-                labels={
-                    'mid': get_machine_id(),
-                    'path': get_sha256(self.path),
-                },
-
-                auto_remove=True,
-                detach=True,
-            )
-
-        rsync = [
+        rsync_args = [
             'rsync',
             '--blocking-io',
             '--archive',
-            '-e',
-            'docker exec -i',
-            '.',
+            '--delete',
+            '--rsh', 'docker exec -i',
+            self.path,
             dockmirror.id + ':'
         ]
 
         if logging.getLogger().level == logging.DEBUG:
-            rsync.append('-vv')
+            rsync_args.append('-vv')
 
-        subprocess.check_call(rsync)
+        subprocess.check_call(rsync_args)
 
         logging.info('volume synchronized')
+
+        cmd_args = self.docker_args[0:self.insert_index + 1] + [
+            '--workdir', '/mnt/dockmirror',
+            '-v', self.volume_name + ':/mnt',
+        ] + self.docker_args[self.insert_index + 1:]
+
+        subprocess.call(cmd_args)
+
+        # TODO: sync in the other way
 
 
 def main(args):
     logging.basicConfig(
-        level=logging.INFO,
+        # level=logging.INFO,
+        level=logging.DEBUG,
         format='%(asctime)s - %(levelname)s - %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S'
     )
