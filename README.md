@@ -1,16 +1,20 @@
 # dockmirror
 
-This is in alpha
+**This is in alpha stage**
 
-Docker wrapper to execute container program against local files.
+dockmirror is a docker wrapper to execute container program against local files.
 
-dockmirror use rsync to make a copy of your local folder on a volume.
+dockmirror use rsync to make a copy of your local folder on a volume.  
 rsync use `docker exec` as a transport. Own container network is never used.
 
 ## install
 
-Download this file [dockmirror.py](https://raw.githubusercontent.com/beteras/dockmirror/master/dockmirror.py)
-You can copy it in `/usr/local/bin`
+Local dependencies
+ - [Python library for the Docker Engine API](https://github.com/docker/docker-py)
+ - [rsync](https://rsync.samba.org/)
+
+Download [dockmirror.py](https://raw.githubusercontent.com/beteras/dockmirror/master/dockmirror.py).  
+You can copy it in `/usr/local/bin`.
 
 ## use
 
@@ -28,7 +32,7 @@ prepend dockmirror.py:
     - Container come from [beteras/dockmirror](https://hub.docker.com/r/beteras/dockmirror)
     - This container auto kill/remove itself without activity for 15min
     - New volume created
-        - [rsync](https://rsync.samba.org/) synchronize it with your local folder
+        - rsync synchronize it with your local folder
 - Your docker command
     - Modified to include the volume
     - Executed
