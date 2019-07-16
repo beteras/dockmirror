@@ -17,7 +17,7 @@ rsync use `docker exec` as a transport. Own container network is never used.
     - No modification to your container/Dockerfile
 - Easy to use
     - Few dependencies available on all Linux distro package system.
-    - Just add `dockmirror.py` in front of your docker command. No fuzzy modification. 
+    - Just add `dockmirror.py` in front of your docker command. No fuzzy configuration/modification.
     - Multi user/machine/path by using an UID on volume.
 - Fast
     - rsync is the de facto standard for efficient file sync.
