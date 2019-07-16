@@ -115,10 +115,15 @@ class DockMirror:
 
         rsync_args = [
             'rsync',
-            '--blocking-io',
             '--archive',
             '--delete',
+
+            '--blocking-io',  # Need for using docker as transport
             '--rsh', 'docker exec -i',
+
+            '--exclude', '.git*',
+            '--exclude-from', '.gitignore',
+
             self.path,
             dockmirror.id + ':'
         ]
