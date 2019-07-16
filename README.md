@@ -53,9 +53,9 @@ prepend dockmirror.py:
 - Your docker command
     - Modified to include the volume
     - Executed
-- Get modified files
+- Get modified files back
     - rsync synchronize the volume with your local current working directory
 
 ## TODO
-- Everything OK, expect the final rsync from volume to your local current working directory
+- Everything OK, expect the final rsync from volume to your local current working directory. Additional security is need to be avoid mass local files deleted. 
 - [Github issues enhancement](https://github.com/beteras/dockmirror/issues?q=is%3Aissue+is%3Aopen+label%3Aenhancement)
