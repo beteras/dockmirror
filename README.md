@@ -8,15 +8,21 @@ ex: `dockermirror.py docker run -it hashicorp/terraform:0.12.4 init`
 dockmirror use another container and rsync to synchronize your local current working directory on a volume.  
 rsync use `docker exec` as a transport. Own container network is never used.
 
-## why another local/container synchronization
+## why another local/container files sync
 
 - Client side only
-    - No docker host plugin
+    - No docker host modification
     - No docker plugin
     - Own container network never used
-    - No modification to your container
+    - No modification to your container/Dockerfile
 - Easy to use
-    - Few dependencies available on all distro
+    - Few dependencies available on all Linux distro package system.
+    - Just add `dockmirror.py` in front of your docker command. No fuzzy modification. 
+    - Multi user/machine/path by using an UID on volume.
+- Fast
+    - rsync is the de facto standard for efficient file sync.
+    - Container used to sync files is keep running for 15min before it kill/delete itself.
+    - Volume have an UID to allow reuse in case the container running sync is not running.
 
 ## install
 
@@ -52,5 +58,4 @@ prepend dockmirror.py:
 
 ## TODO
 - Everything OK, expect the final rsync from volume to your local current working directory
-- MacOS/Windows ?
-- Better README.md
+- [Github issues enhancement](https://github.com/beteras/dockmirror/issues?q=is%3Aissue+is%3Aopen+label%3Aenhancement)
