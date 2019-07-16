@@ -1,4 +1,4 @@
-FROM alpine:3.10
+FROM alpine
 
 RUN apk add --no-cache rsync && \
     \
