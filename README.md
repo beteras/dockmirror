@@ -2,10 +2,21 @@
 
 **This is in alpha stage**
 
-dockmirror is a docker wrapper to execute container program against local files.
+dockmirror is a docker wrapper to execute container program against local files.  
+ex: `dockermirror.py docker run -it hashicorp/terraform:0.12.4 init`
 
-dockmirror use rsync to make a copy of your local folder on a volume.  
+dockmirror use another container and rsync to synchronize your local current working directory on a volume.  
 rsync use `docker exec` as a transport. Own container network is never used.
+
+## why another local/container synchronization
+
+- Client side only
+    - No docker host plugin
+    - No docker plugin
+    - Own container network never used
+    - No modification to your container
+- Easy to use
+    - Few dependencies available on all distro
 
 ## install
 
@@ -41,4 +52,5 @@ prepend dockmirror.py:
 
 ## TODO
 - Everything OK, expect the final rsync from volume to your local current working directory
+- MacOS/Windows ?
 - Better README.md
