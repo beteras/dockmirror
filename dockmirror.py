@@ -123,18 +123,18 @@ class DockMirror:
 
         subprocess.call(cmd_args)
 
-        print(cmd_args)
-
         self.sync_volume_local()
 
     def sync_local_volume(self):
-        print('*' * 80)
-        print(self.path)
-
         rsync_args = [
             'rsync',
             '--whole-file',
-            '--archive',
+
+            # '--archive',
+            '--recursive',
+            '--perms',
+            '--times',
+
             '--delete',
 
             '--blocking-io',  # Need for using docker as transport
@@ -163,15 +163,18 @@ class DockMirror:
             '--whole-file',
             # '--dry-run',
 
-            '--archive',
+            # '--archive',
+            '--recursive',
+            '--perms',
+            '--times',
+
             # '--delete',
 
             '--blocking-io',  # Need for using docker as transport
             '--rsh', 'docker exec -i',
 
-            self.container.id + ':/home/dockmirror/',
+            self.container.id + ':',
             self.path,
-            # os.path.join(self.path, '..')  # rsync force parent directory
         ]
 
         if logging.getLogger().level == logging.DEBUG:
@@ -184,8 +187,8 @@ class DockMirror:
 
 def main(args):
     logging.basicConfig(
-        # level=logging.INFO,
-        level=logging.DEBUG,
+        level=logging.INFO,
+        # level=logging.DEBUG,
         format='%(asctime)s - %(levelname)s - %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S'
     )
