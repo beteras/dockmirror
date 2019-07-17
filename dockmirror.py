@@ -49,6 +49,7 @@ class DockMirror:
     def __init__(self, path, docker_args):
         self.docker_args = docker_args
         self.path = path
+        self.container = None
 
         self.volume_name = 'dockmirror_{}_{}'.format(
             get_machine_id(),
@@ -111,22 +112,43 @@ class DockMirror:
         return dockmirrors[0] if len(dockmirrors) == 1 else self.start_container()
 
     def sync(self):
-        dockmirror = self.get_container()
+        self.container = self.get_container()
+
+        self.sync_local_volume()
+
+        cmd_args = self.docker_args[0:self.insert_index + 1] + [
+            '--workdir', '/mnt/dockmirror',
+            '-v', self.volume_name + ':/mnt/dockmirror',
+        ] + self.docker_args[self.insert_index + 1:]
+
+        subprocess.call(cmd_args)
+
+        print(cmd_args)
+
+        self.sync_volume_local()
+
+    def sync_local_volume(self):
+        print('*' * 80)
+        print(self.path)
 
         rsync_args = [
             'rsync',
+            '--whole-file',
             '--archive',
             '--delete',
 
             '--blocking-io',  # Need for using docker as transport
             '--rsh', 'docker exec -i',
 
-            '--exclude', '.git*',
-            '--exclude-from', '.gitignore',
-
-            self.path,
-            dockmirror.id + ':'
+            self.path + '/',
+            self.container.id + ':',
         ]
+
+        if os.path.exists(os.path.join(self.path, '.git')):
+            rsync_args.extend(['--exclude', '.git*'])
+
+        if os.path.exists(os.path.join(self.path, '.gitignore')):
+            rsync_args.extend(['--exclude-from', '.gitignore'])
 
         if logging.getLogger().level == logging.DEBUG:
             rsync_args.append('-vv')
@@ -135,14 +157,29 @@ class DockMirror:
 
         logging.info('volume synchronized')
 
-        cmd_args = self.docker_args[0:self.insert_index + 1] + [
-            '--workdir', '/mnt/dockmirror',
-            '-v', self.volume_name + ':/mnt',
-        ] + self.docker_args[self.insert_index + 1:]
+    def sync_volume_local(self):
+        rsync_args = [
+            'rsync',
+            '--whole-file',
+            # '--dry-run',
 
-        subprocess.call(cmd_args)
+            '--archive',
+            # '--delete',
 
-        # TODO: sync in the other way
+            '--blocking-io',  # Need for using docker as transport
+            '--rsh', 'docker exec -i',
+
+            self.container.id + ':/home/dockmirror/',
+            self.path,
+            # os.path.join(self.path, '..')  # rsync force parent directory
+        ]
+
+        if logging.getLogger().level == logging.DEBUG:
+            rsync_args.append('-vv')
+
+        subprocess.check_call(rsync_args)
+
+        logging.info('volume synchronized back')
 
 
 def main(args):
