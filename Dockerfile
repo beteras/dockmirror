@@ -1,5 +1,7 @@
 FROM alpine
 
+LABEL maintainer="https://github.com/beteras/dockmirror"
+
 RUN apk add --no-cache rsync && \
     \
     addgroup dockmirror && \
