@@ -1,8 +1,8 @@
 # dockmirror
 
-**This is in alpha stage**
+**This is in beta stage**
 
-dockmirror is a docker wrapper to execute container program against local files.  
+dockmirror is a Linux docker wrapper to execute container program against local files.  
 
 ex: `dockermirror.py docker run -it hashicorp/terraform:0.12.4 init`
 ![Terraform example](https://raw.githubusercontent.com/beteras/dockmirror/master/assets/terraform_sample/example.gif)
@@ -59,5 +59,4 @@ prepend dockmirror.py:
     - rsync synchronize the volume with your local current working directory
 
 ## TODO
-- Everything OK, expect the final rsync from volume to your local current working directory. Additional security is need to be avoid mass local files deleted. 
 - [Github issues enhancement](https://github.com/beteras/dockmirror/issues?q=is%3Aissue+is%3Aopen+label%3Aenhancement)
