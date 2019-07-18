@@ -1,0 +1,24 @@
+xterm -fg white -bg black -e sh
+export DOCKER_HOST=tcp://172.28.128.200:2375
+
+export PS1="user@host:~\$ "
+
+dockmirror.py docker run --rm hashicorp/terraform:0.12.4 init
+dockmirror.py docker run --rm hashicorp/terraform:0.12.4 apply -auto-approve
+
+tmux new-session -c sh -s DOCKMIRROR
+
+docker kill $(docker ps -a -q)
+docker -H tcp://172.28.128.200:2375 system prune --volumes -f
+rm -rf .terraform terraform.tfstate
+
+
+echo "ls" | (while read -n1 char; do tmux send-keys -t DOCKMIRROR "$char"; sleep $(bc <<< "scale=2;$RANDOM / 160000"); done); tmux send-keys -t DOCKMIRROR Enter
+sleep 1
+echo "dockmirror.py\ docker\ run\ --rm\ hashicorp/terraform:0.12.4\ init" | (while read -n1 char; do tmux send-keys -t DOCKMIRROR "$char"; sleep $(bc <<< "scale=2;$RANDOM / 200000"); done); tmux send-keys -t DOCKMIRROR Enter
+sleep 8
+echo "dockmirror.py\ docker\ run\ --rm\ hashicorp/terraform:0.12.4\ apply\ -auto-approve" | (while read -n1 char; do tmux send-keys -t DOCKMIRROR "$char"; sleep $(bc <<< "scale=2;$RANDOM / 200000"); done); tmux send-keys -t DOCKMIRROR Enter
+sleep 5
+echo "ls" | (while read -n1 char; do tmux send-keys -t DOCKMIRROR "$char"; sleep $(bc <<< "scale=2;$RANDOM / 160000"); done); tmux send-keys -t DOCKMIRROR Enter
+sleep 6
+echo "reset" | (while read -n1 char; do tmux send-keys -t DOCKMIRROR "$char"; sleep $(bc <<< "scale=2;$RANDOM / 160000"); done); tmux send-keys -t DOCKMIRROR Enter
