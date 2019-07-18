@@ -3,7 +3,9 @@
 **This is in alpha stage**
 
 dockmirror is a docker wrapper to execute container program against local files.  
+
 ex: `dockermirror.py docker run -it hashicorp/terraform:0.12.4 init`
+![Terraform example](https://raw.githubusercontent.com/beteras/dockmirror/master/assets/terraform_sample/example.gif)
 
 dockmirror use another container and rsync to synchronize your local current working directory on a volume.  
 rsync use `docker exec` as a transport. Own container network is never used.
