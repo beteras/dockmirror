@@ -48,6 +48,13 @@ def get_machine_id():
 class DockMirror:
     def __init__(self, path, docker_args):
         self.docker_args = docker_args
+
+        if self.docker_args[0].startswith('-d'):
+            self.docker_args.pop(0)
+            self.parent_depth = int(self.docker_args.pop(0))
+        else:
+            self.parent_depth = 0
+
         self.path = path
         self.container = None
 
@@ -84,7 +91,7 @@ class DockMirror:
 
             volumes={
                 self.volume_name: {
-                    'bind': '/home/dockmirror'
+                    'bind': '/home'
                 },
             },
 
@@ -104,7 +111,7 @@ class DockMirror:
             'label': [
                 'mid=' + get_machine_id(),
                 'path=' + get_sha256(self.path),
-                ],
+            ],
         })
 
         assert len(dockmirrors) <= 1, "can't have more than 1 container with same labels"
@@ -114,45 +121,53 @@ class DockMirror:
     def sync(self):
         self.container = self.get_container()
 
+        self.create_target_path()
         self.sync_local_volume()
 
         cmd_args = self.docker_args[0:self.insert_index + 1] + [
-            '--workdir', '/mnt/dockmirror',
-            '-v', self.volume_name + ':/mnt/dockmirror',
+            '--workdir', self.path,
+            '-v', self.volume_name + ':/home',
         ] + self.docker_args[self.insert_index + 1:]
+
+        logging.debug(' '.join(cmd_args))
 
         subprocess.call(cmd_args)
 
         self.sync_volume_local()
+
+    def create_target_path(self):
+        docker_args = [
+            'docker',
+            'exec',
+            '--interactive',
+            self.container.id,
+            'mkdir', '-p', self.path,
+        ]
+
+        subprocess.check_call(docker_args)
 
     def sync_local_volume(self):
         rsync_args = [
             'rsync',
             '--whole-file',
 
-            # '--archive',
-            '--recursive',
-            '--perms',
-            '--times',
-
+            '--archive',
             '--delete',
 
-            '--blocking-io',  # Need for using docker as transport
-            '--rsh', 'docker exec -i',
+            '--blocking-io',  # Need to use docker as transport
+            '--rsh', 'docker exec --interactive',
 
-            self.path + '/',
-            self.container.id + ':',
+            self.path + '/' + ('../' * self.parent_depth),
+            self.container.id + ':' + self.path + ('/..' * self.parent_depth),
         ]
 
         if os.path.exists(os.path.join(self.path, '.git')):
             rsync_args.extend(['--exclude', '.git*'])
 
-        if os.path.exists(os.path.join(self.path, '.gitignore')):
-            rsync_args.extend(['--exclude-from', '.gitignore'])
-
         if logging.getLogger().level == logging.DEBUG:
             rsync_args.append('-vv')
 
+        logging.debug(' '.join(rsync_args))
         subprocess.check_call(rsync_args)
 
         logging.info('volume synchronized')
@@ -168,12 +183,15 @@ class DockMirror:
             '--perms',
             '--times',
 
+            # When shell pipe are used, new local file must be preserved
+            '--update',
+
             # '--delete',
 
-            '--blocking-io',  # Need for using docker as transport
-            '--rsh', 'docker exec -i',
+            '--blocking-io',  # Need to use docker as transport
+            '--rsh', 'docker exec --interactive',
 
-            self.container.id + ':',
+            self.container.id + ':' + self.path + '/',
             self.path,
         ]
 
