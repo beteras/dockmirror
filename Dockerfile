@@ -2,14 +2,9 @@ FROM alpine
 
 LABEL maintainer="https://github.com/beteras/dockmirror"
 
-RUN apk add --no-cache rsync && \
-    \
-    addgroup dockmirror && \
-    adduser -D dockmirror -G dockmirror
+RUN apk add --no-cache rsync
 
-USER dockmirror
-
-WORKDIR /home/dockmirror
+WORKDIR /home
 
 CMD [ \
   "sh", \
