@@ -1,6 +1,8 @@
 #!/usr/bin/python3
 
 import argparse
+import getpass
+import grp
 import hashlib
 import logging
 import os
@@ -58,6 +60,10 @@ class DockMirror:
         self.path = path
         self.container = None
 
+        # TODO: No easier way ?
+        self.user_name = getpass.getuser()
+        self.group_name = grp.getgrgid(os.getegid()).gr_name
+
         self.volume_name = 'dockmirror_{}_{}'.format(
             get_machine_id(),
             get_sha256(self.path)
@@ -86,12 +92,12 @@ class DockMirror:
             os.environ["DOCKER_HOST"] = args.host
 
     def start_container(self):
-        return self.docker.containers.run(
+        container = self.docker.containers.run(
             image='beteras/dockmirror',
 
             volumes={
                 self.volume_name: {
-                    'bind': '/home'
+                    'bind': '/home/' + self.user_name
                 },
             },
 
@@ -103,6 +109,12 @@ class DockMirror:
             auto_remove=True,
             detach=True,
         )
+
+        # TODO: Ugly fast fix
+        self.container = container
+        self.create_user()
+
+        return container
 
     def get_container(self):
         dockmirrors = self.docker.containers.list(filters={
@@ -125,8 +137,10 @@ class DockMirror:
         self.sync_local_volume()
 
         cmd_args = self.docker_args[0:self.insert_index + 1] + [
+            '--user', '{}:{}'.format(os.geteuid(), os.getegid()),
+            # '--user', '{}:{}'.format(self.user_name, self.group_name),
             '--workdir', self.path,
-            '-v', self.volume_name + ':/home',
+            '-v', self.volume_name + ':/home/' + self.user_name,
         ] + self.docker_args[self.insert_index + 1:]
 
         logging.debug(' '.join(cmd_args))
@@ -135,16 +149,38 @@ class DockMirror:
 
         self.sync_volume_local()
 
-    def create_target_path(self):
-        docker_args = [
+    def docker_exec(self, args):
+        subprocess.check_call([
             'docker',
             'exec',
             '--interactive',
             self.container.id,
-            'mkdir', '-p', self.path,
-        ]
+            *map(str, args),  # Sorry, int problems
+        ])
 
-        subprocess.check_call(docker_args)
+    def create_target_path(self):
+        self.docker_exec([
+            'mkdir',
+            '-p',
+            self.path,
+        ])
+
+    def create_user(self):
+        logging.info('creating user/group: {}:{}'.format(
+            getpass.getuser(),
+            self.group_name,
+        ))
+
+        self.docker_exec([
+            'addgroup',
+            self.group_name,
+        ])
+
+        self.docker_exec([
+            'adduser',
+            '-D', self.user_name,
+            '-G', self.group_name,
+        ])
 
     def sync_local_volume(self):
         rsync_args = [
@@ -182,6 +218,7 @@ class DockMirror:
             '--recursive',
             '--perms',
             '--times',
+            "--links",
 
             # When shell pipe are used, new local file must be preserved
             '--update',
